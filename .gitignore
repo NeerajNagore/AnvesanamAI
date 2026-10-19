@@ -1,0 +1,38 @@
+# ── Node / Frontend ────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+*.tsbuildinfo
+
+# ── Environment files (NEVER commit these) ──────────────────────
+.env
+.env.local
+.env.development.local
+.env.production.local
+nexus_backend/.env
+
+# ── Python / Backend ────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ── Backend runtime data ─────────────────────────────────────────
+nexus_backend/.data/
+
+# ── Editor / OS ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/settings.json
+.qodo/
+
+# ── Logs ─────────────────────────────────────────────────────────
+*.log

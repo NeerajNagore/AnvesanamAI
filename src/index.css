@@ -1,0 +1,100 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 30% 97%;
+    --foreground: 232 30% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 232 30% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 232 30% 12%;
+    --primary: 250 80% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 226 30% 94%;
+    --secondary-foreground: 232 30% 18%;
+    --muted: 226 30% 94%;
+    --muted-foreground: 230 12% 40%;
+    --accent: 226 40% 93%;
+    --accent-foreground: 232 30% 18%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 226 25% 88%;
+    --input: 226 25% 86%;
+    --ring: 250 80% 58%;
+    --radius: 0.9rem;
+  }
+
+  .dark {
+    --background: 232 38% 5.5%;
+    --foreground: 220 25% 94%;
+    --card: 232 30% 8.5%;
+    --card-foreground: 220 25% 94%;
+    --popover: 232 30% 9%;
+    --popover-foreground: 220 25% 94%;
+    --primary: 252 90% 68%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 232 25% 14%;
+    --secondary-foreground: 220 25% 92%;
+    --muted: 232 25% 12%;
+    --muted-foreground: 225 14% 64%;
+    --accent: 232 28% 15%;
+    --accent-foreground: 220 25% 94%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 232 22% 16%;
+    --input: 232 22% 19%;
+    --ring: 252 90% 68%;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  ::selection {
+    background: hsl(var(--primary) / 0.35);
+  }
+}
+
+@layer components {
+  .glass {
+    @apply border bg-card/60 backdrop-blur-xl;
+  }
+  .gradient-text {
+    @apply bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent;
+  }
+  .brand-gradient {
+    @apply bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 6px;
+    width: 6px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 9999px;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
