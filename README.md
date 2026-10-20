@@ -104,7 +104,7 @@ In your Vercel Project Settings (under **Settings** ➔ **Environment Variables*
 | Variable | Required | Description | Where to Obtain |
 |---|---|---|---|
 | `GROQ_API_KEY` | Recommended | Fast LLM inference for chat and deep synthesis | [console.groq.com/keys](https://console.groq.com/keys) |
-| `GROQ_MODEL` | Optional | Model identifier (default: `llama-3.3-70b-versatile`) | Groq Documentation |
+| `GROQ_MODEL` | Optional | Model identifier (defaults to `openai/gpt-oss-120b` with auto-fallback to `openai/gpt-oss-20b`, `llama-3.3-70b-versatile`) | Groq Documentation |
 | `TAVILY_API_KEY` | Recommended | Live web search grounding and citations | [app.tavily.com](https://app.tavily.com) |
 | `NEWSAPI_KEY` | Optional | GNews or NewsAPI.org key for headlines | [gnews.io](https://gnews.io) or [newsapi.org](https://newsapi.org) |
 | `NEWS_COUNTRY` | Optional | Default country for headlines (default: `in`) | ISO country code |
