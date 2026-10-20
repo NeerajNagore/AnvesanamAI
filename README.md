@@ -2,6 +2,8 @@
 
 **ANVEṢAṆAM AI** is a personalized AI research, news intelligence, and weather agent web application. It combines real-time multi-source research, streaming AI synthesis with verifiable source citations, live categorized news feeds, and live weather forecasting with a modern glassmorphic interface.
 
+**Target Repository**: `https://github.com/NeerajNagore/AnvesanamAI.git`
+
 ---
 
 ## 1. Overview & Verified Features
@@ -17,22 +19,40 @@
 
 ---
 
-## 2. Architecture & Data Flow
+## 2. Architecture & Deployment Models
+
+ANVEṢAṆAM AI is built as a dual-engine production system:
+
+### A. Vercel Serverless Architecture (Default for Vercel Deployments)
+
+```text
+[ Vercel Edge / CDN ]
+       ├── Static SPA: / (serves Vite build from dist/ with SPA rewrites)
+       └── Serverless API: /api/* (routes to api/*.ts functions)
+                 ├── /api/chat/stream ──► Groq API (Streaming SSE tokens)
+                 ├── /api/research    ──► Tavily + Groq JSON synthesis
+                 ├── /api/news        ──► GNews / NewsAPI / Tavily
+                 ├── /api/weather     ──► Open-Meteo (Keyless)
+                 └── /api/integrations ─► Provider diagnostics
+```
+
+- When deployed on Vercel, the application executes **100% natively** without requiring external servers.
+- `vercel.json` provides seamless SPA routing fallbacks for `/chat`, `/research`, `/news`, `/weather`, `/settings` so page refreshes never 404.
+
+### B. Standalone Container / Local Architecture (FastAPI Backend)
 
 ```text
 [ React 18 + Vite Frontend (Port 5173) ]
                    │
-                   │ /api/* (Dev Proxy or Production Base URL)
+                   │ /api/* (Dev Proxy)
                    ▼
-[ FastAPI Backend (Port 8000) ] ───────────┬──► Groq / xAI API (Chat / Synthesis)
-   ├── Routers: chat, research, news,      ├──► Tavily API (Search & News)
-   │            weather, integrations      ├──► GNews / NewsAPI (Headlines)
-   └── Store: .data/keys.json or .env      └──► Open-Meteo API (Weather / Geocoding)
+[ FastAPI Backend (Port 8000) ] ───────────┬──► Groq / xAI API
+   ├── Routers: chat, research, news,      ├──► Tavily API
+   │            weather, integrations      ├──► GNews / NewsAPI
+   └── Store: .data/keys.json or .env      └──► Open-Meteo API
 ```
 
-- **Local Development Flow**: The browser sends requests to `http://localhost:5173/api/*`. Vite's development proxy routes `/api/*` to `http://127.0.0.1:8000`. The FastAPI backend handles the routes both at `/api/*` and `/*`.
-- **Production Flow**: The compiled static frontend (`dist/`) connects to the deployed backend origin via `VITE_API_BASE_URL` with CORS enabled on the backend.
-- **Demo Mode**: If `VITE_API_BASE_URL` is empty and no backend is reachable, the frontend seamlessly operates in demo mode for research and news, while weather continues to function via direct keyless Open-Meteo calls.
+- Run locally using Python uvicorn or containerized via `nexus_backend/Dockerfile` on Google Cloud Run, AWS ECS, or Render.
 
 ---
 
@@ -40,28 +60,33 @@
 
 ```text
 .
+├── api/                               # Vercel Serverless Functions
+│   ├── _lib/                          # Serverless helpers (config, llm, tavily, news, weather)
+│   ├── chat/
+│   │   └── stream.ts                  # Real-time SSE streaming chat endpoint
+│   ├── integrations/
+│   │   ├── index.ts                   # Provider status listing
+│   │   ├── [id].ts                    # Save/remove integration keys
+│   │   └── [id]/test.ts               # Test integration connectivity
+│   ├── health.ts                      # Liveness probe
+│   ├── news.ts                        # Categorized news endpoint
+│   ├── research.ts                    # Deep multi-source research report generator
+│   └── weather.ts                     # Live weather & forecast endpoint
 ├── src/                               # Frontend source (React 18 + TypeScript)
-│   ├── components/
-│   │   ├── layout/                    # AppLayout, Navbar, Sidebar
-│   │   ├── shared/                    # Backgrounds, NewsCard, SourceCard, ReportView
-│   │   └── ui/                        # Radix UI primitives (Dialog, Button, Tabs, etc.)
+│   ├── components/layout/             # AppLayout, Navbar, Sidebar
+│   ├── components/shared/             # Backgrounds, NewsCard, SourceCard, ReportView
+│   ├── components/ui/                 # Radix UI primitives (Dialog, Button, Tabs, etc.)
 │   ├── context/                       # AppContext (settings, reports, toasts)
 │   ├── hooks/                         # useAsync, useDebounce, useLocalStorage
 │   ├── lib/                           # api.ts (API client), demo.ts, utils.ts
-│   ├── pages/                         # Dashboard, Chat, Research, News, Weather, Integrations, etc.
+│   ├── pages/                         # Dashboard, Chat, Research, News, Weather, etc.
 │   └── types/                         # TypeScript interfaces and contracts
-├── nexus_backend/                     # Backend source (Python + FastAPI)
-│   ├── app/
-│   │   ├── routers/                   # chat.py, research.py, news.py, weather.py, integrations.py
-│   │   ├── services/                  # llm.py, tavily.py, news.py, weather.py
-│   │   ├── config.py                  # Environment config and language mappings
-│   │   ├── errors.py                  # Standardized ServiceError exception
-│   │   ├── main.py                    # FastAPI application entrypoint & CORS
-│   │   ├── schemas.py                 # Pydantic request/response schemas
-│   │   └── store.py                   # Secure server-side credential store
-│   ├── Dockerfile                     # Production container definition
+├── nexus_backend/                     # Python FastAPI Backend (for Local/Docker/Cloud Run)
+│   ├── app/                           # routers, services, config, main.py
+│   ├── Dockerfile                     # Production container image
 │   ├── requirements.txt               # Python package dependencies
 │   └── .env.example                   # Backend environment template
+├── vercel.json                        # Vercel configuration (Vite preset + SPA & API rewrites)
 ├── .env.example                       # Frontend environment template
 ├── package.json                       # Frontend manifest (anveshanam-ai)
 ├── tsconfig.json                      # TypeScript configuration
@@ -70,188 +95,88 @@
 
 ---
 
-## 4. Prerequisites & Runtime Versions
+## 4. Prerequisites & Environment Variables
 
-- **Node.js**: v18.0.0 or higher (v20+ recommended)
-- **npm**: v9.0.0 or higher
-- **Python**: v3.10 to v3.13 (Python 3.12+ recommended)
-- **Git**: v2.30+
+### Environment Variables on Vercel
 
----
+In your Vercel Project Settings (under **Settings** ➔ **Environment Variables**), configure:
 
-## 5. Installation & Local Setup
-
-### Terminal 1: Backend (FastAPI)
-
-```powershell
-# Navigate to backend directory
-cd nexus_backend
-
-# (Optional) Create and activate virtual environment
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Configure environment
-Copy-Item .env.example .env
-# Edit .env with your credentials (or enter them later via the UI Integrations page)
-
-# Start backend server
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
-```
-
-Backend will be active at: `http://127.0.0.1:8000` (API Docs: `http://127.0.0.1:8000/docs`).
-
-### Terminal 2: Frontend (Vite + React)
-
-```powershell
-# In project root
-npm ci  # or npm install
-
-# Start Vite development server
-npm run dev
-```
-
-Frontend will be active at: `http://localhost:5173`.
-
----
-
-## 6. Environment Variables & Credentials
-
-### Frontend (`.env` / `.env.production`)
-
-| Variable | Public/Secret | Description | Example |
+| Variable | Required | Description | Where to Obtain |
 |---|---|---|---|
-| `VITE_API_BASE_URL` | Public | Base URL for API requests. In dev, `/api` uses Vite proxy. | `/api` or `https://api.yourdomain.com` |
-| `VITE_BACKEND_URL` | Public (Dev only) | Target backend origin for Vite proxy. | `http://localhost:8000` |
+| `GROQ_API_KEY` | Recommended | Fast LLM inference for chat and deep synthesis | [console.groq.com/keys](https://console.groq.com/keys) |
+| `GROQ_MODEL` | Optional | Model identifier (default: `llama-3.3-70b-versatile`) | Groq Documentation |
+| `TAVILY_API_KEY` | Recommended | Live web search grounding and citations | [app.tavily.com](https://app.tavily.com) |
+| `NEWSAPI_KEY` | Optional | GNews or NewsAPI.org key for headlines | [gnews.io](https://gnews.io) or [newsapi.org](https://newsapi.org) |
+| `NEWS_COUNTRY` | Optional | Default country for headlines (default: `in`) | ISO country code |
 
-### Backend (`nexus_backend/.env`)
-
-| Variable | Public/Secret | Required | Description | Where to Obtain |
-|---|---|---|---|---|
-| `GROQ_API_KEY` | Secret | Optional* | Fast LLM inference for chat and synthesis | [console.groq.com](https://console.groq.com/keys) |
-| `GROQ_MODEL` | Public | No (defaults to `llama-3.3-70b-versatile`) | Groq model selection | Groq Docs |
-| `TAVILY_API_KEY` | Secret | Optional* | Real-time web search and citation indexing | [app.tavily.com](https://app.tavily.com) |
-| `NEWSAPI_KEY` | Secret | Optional | GNews API key or NewsAPI.org key for headlines | [gnews.io](https://gnews.io) or [newsapi.org](https://newsapi.org) |
-| `NEWS_COUNTRY` | Public | No (default: `in`) | Country code for news headlines | ISO 3166-1 alpha-2 code |
-| `CORS_ORIGINS` | Public | Yes (Prod) | Comma-separated allowed frontend origins | `http://localhost:5173,https://anveshanam-ai.web.app` |
-| `DATA_DIR` | Public | No (default: `.data`) | Local server directory for key storage | Local path |
-
-*\*Note: If external keys are not provided in `.env`, they can be added directly through the application's `/integrations` interface, where keys are stored securely server-side in `.data/keys.json`.*
+*\*Note: Weather uses Open-Meteo, which is keyless and works immediately out of the box without any keys!*
 
 ---
 
-## 7. API Reference
+## 5. Deploying to Vercel (Step-by-Step)
 
-All routes are mounted at root `/` and `/api/*`.
+1. **Push your code to GitHub**:
+   Ensure your code is pushed to your GitHub repository:
+   `https://github.com/NeerajNagore/AnvesanamAI.git`
 
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/health` | Backend liveness probe. Returns `{"ok": true}`. |
-| `POST` | `/chat/stream` | Server-Sent Events stream for AI chat with Tavily web grounding. |
-| `POST` | `/research` | Executes multi-source web research report generation. |
-| `GET` | `/news` | Returns curated news articles by category (`technology`, `business`, etc.) or search query. |
-| `GET` | `/weather` | Returns current conditions, hourly, and 7-day forecast. |
-| `GET` | `/integrations` | Returns integration status (indicates whether configured; never returns key contents). |
-| `PUT` | `/integrations/{id}` | Securely sets provider key server-side. |
-| `DELETE` | `/integrations/{id}` | Removes stored provider key. |
-| `POST` | `/integrations/{id}/test` | Tests live provider connectivity and reports status. |
+2. **Import into Vercel**:
+   - Go to [vercel.com](https://vercel.com) and click **"Add New..."** ➔ **"Project"**.
+   - Select your GitHub repository **`AnvesanamAI`**.
+   - Vercel automatically detects the framework as **Vite**.
+   - **Root Directory**: `./` (leave default).
+   - **Build Command**: `npm run build` (or leave default).
+   - **Output Directory**: `dist` (or leave default).
+
+3. **Add Environment Variables**:
+   Under **Environment Variables**, add:
+   - `GROQ_API_KEY` = your Groq API key
+   - `TAVILY_API_KEY` = your Tavily API key
+   - `NEWSAPI_KEY` = your GNews or NewsAPI key (optional)
+
+4. **Deploy**:
+   Click **Deploy**.
+   Vercel will:
+   - Build the Vite static assets into `dist/`.
+   - Deploy `api/` as Serverless Functions.
+   - Activate the SPA rewrites configured in `vercel.json`.
 
 ---
 
-## 8. Validation Commands
+## 6. Local Development
+
+### Option A: Local Full-Stack with Python Backend
+```powershell
+# Terminal 1: Backend
+cd nexus_backend
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+
+# Terminal 2: Frontend
+npm run dev
+# Open http://localhost:5173
+```
+
+### Option B: Local Development with Vercel CLI
+```powershell
+npx vercel dev
+# Simulates both Vite frontend and Vercel Serverless Functions on http://localhost:3000
+```
+
+---
+
+## 7. Verification & Build Commands
 
 ```powershell
 # TypeScript Typecheck
 npm run typecheck
 
-# Production Bundle Build
+# Production Build
 npm run build
-
-# Preview Production Build locally
-npm run preview
 ```
 
 ---
 
-## 9. Troubleshooting & Diagnostics
+## 8. Security & Privacy
 
-- **`[vite] http proxy error: AggregateError [ECONNREFUSED]`**:
-  The backend process is not running or listening on port 8000. Start the backend with:
-  `python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`
-- **`[Errno 10048] only one usage of each socket address is normally permitted`**:
-  Another process is already bound to port 8000. Find and stop it using:
-  ```powershell
-  Get-NetTCPConnection -LocalPort 8000 | Select-Object OwningProcess
-  Stop-Process -Id <PID> -Force
-  ```
-- **Weather / Geocoding timeout**:
-  Ensure outgoing HTTPS access to `api.open-meteo.com` and `geocoding-api.open-meteo.com` is not blocked by local firewalls.
-
----
-
-## 10. GitHub Publishing Workflow
-
-When ready to publish to GitHub:
-
-1. Initialize git and inspect status:
-   ```powershell
-   git init
-   git branch -M main
-   git status --short
-   ```
-2. Confirm `.env` and `.data` are ignored:
-   ```powershell
-   git status --ignored
-   ```
-3. Stage project files and commit:
-   ```powershell
-   git add .
-   git commit -m "feat: initial commit of ANVEṢAṆAM AI"
-   ```
-4. Connect remote repository and push:
-   ```powershell
-   git remote add origin https://github.com/NeerajNagore/-ANVE-A-AM-AI-.git
-   git push -u origin main
-   ```
-
----
-
-## 11. Production Deployment
-
-### Option A: Containerized Deployment (Google Cloud Run / AWS ECS / Render)
-
-1. **Build Docker Image**:
-   ```bash
-   docker build -t anveshanam-backend:latest ./nexus_backend
-   ```
-2. **Deploy to Cloud Run**:
-   ```bash
-   gcloud run deploy anveshanam-api \
-     --source ./nexus_backend \
-     --region us-central1 \
-     --allow-unauthenticated \
-     --set-env-vars CORS_ORIGINS="https://your-frontend-domain.com"
-   ```
-3. Set secrets in Cloud Run: `GROQ_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_KEY`.
-
-### Option B: Static Frontend Hosting (Vercel / Cloudflare Pages / Firebase)
-
-1. Build production static bundle:
-   ```bash
-   npm run build
-   ```
-2. Deploy the `dist/` folder.
-3. Configure environment variable on host:
-   `VITE_API_BASE_URL=https://your-deployed-backend-url`
-4. Add SPA rewrite rule (`/* -> /index.html`).
-
----
-
-## 12. Security Guidelines
-
-1. **No Client-Side Secrets**: Never add private API keys (`GROQ_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_KEY`) to frontend `.env` files or variables prefixed with `VITE_`.
-2. **Key Store Isolation**: Server-side keys saved via `/integrations` are written to `.data/keys.json` with restricted permissions and are git-ignored.
-3. **CORS Configuration**: Restrict `CORS_ORIGINS` in production to your actual frontend domain instead of wildcards.
+1. **No Client-Side Secret Leakage**: All private provider keys (`GROQ_API_KEY`, `TAVILY_API_KEY`, `NEWSAPI_KEY`) run strictly server-side in the Vercel Serverless environment or FastAPI backend. They are never exposed to browser client bundles or public `VITE_` variables.
+2. **Safe Key Management**: Diagnostic endpoints and test functions never return raw secret values.
+3. **Protected Environment**: Real `.env` files and `.data/` directory are excluded from Git via `.gitignore`.
