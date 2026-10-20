@@ -131,23 +131,47 @@ export default async function handler(req: any, res: any) {
 
     const userPrompt = `Research question: ${query}\n\nSources:\n${sourcesBlock}`;
 
-    const groqRes = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
-      body: JSON.stringify({
-        model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: depthConfig.tokens,
-        temperature: 0.3,
-      }),
-    });
+    const candidateModels = [
+      process.env.GROQ_MODEL,
+      "openai/gpt-oss-120b",
+      "openai/gpt-oss-20b",
+      "llama-3.3-70b-versatile",
+      "qwen/qwen3.8-27b",
+      "llama-3.1-8b-instant",
+    ].filter((m, i, arr): m is string => Boolean(m && arr.indexOf(m) === i));
 
-    if (!groqRes.ok) {
-      return res.status(502).json({ detail: "Language model failed to generate report." });
+    let groqRes: Response | null = null;
+
+    for (const modelCandidate of candidateModels) {
+      const attempt = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${groqKey}` },
+        body: JSON.stringify({
+          model: modelCandidate,
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: userPrompt },
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: depthConfig.tokens,
+          temperature: 0.3,
+        }),
+      });
+
+      if (attempt.status === 404) {
+        console.warn(`Model ${modelCandidate} returned 404 for research, trying next candidate...`);
+        continue;
+      }
+
+      groqRes = attempt;
+      break;
+    }
+
+    if (!groqRes || !groqRes.ok) {
+      const errBody = groqRes ? await groqRes.json().catch(() => null) : null;
+      return res.status(502).json({
+        detail: errBody?.error?.message || `Language model failed to generate report (${groqRes?.status || 500}).`,
+      });
     }
 
     const gData = await groqRes.json();
