@@ -1,7 +1,11 @@
-import type { VercelRequest, VercelResponse } from "./_lib/types";
-import { setCorsHeaders } from "./_lib/config";
+export default async function handler(req: any, res: any) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, Accept");
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  if (setCorsHeaders(req, res)) return;
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
+  }
+
   return res.status(200).json({ ok: true });
 }

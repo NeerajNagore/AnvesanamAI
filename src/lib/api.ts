@@ -24,8 +24,8 @@ import type {
 import { buildDemoAnswer, buildDemoReport, demoNews, demoWeather } from "./demo";
 import { uid } from "./utils";
 
-export const API_BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined) ?? "").replace(/\/+$/, "");
-export const hasBackend = API_BASE.length > 0;
+export const API_BASE = ((import.meta.env.VITE_API_BASE_URL as string | undefined) || "/api").replace(/\/+$/, "");
+export const hasBackend = true;
 
 export class ApiError extends Error {
   status?: number;

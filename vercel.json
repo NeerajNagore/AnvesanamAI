@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/api/integrations/:id/test",
-      "destination": "/api/integrations/[id]/test"
+      "destination": "/api/integrations?id=$1&action=test"
     },
     {
       "source": "/api/integrations/:id",
-      "destination": "/api/integrations/[id]"
+      "destination": "/api/integrations?id=$1"
     },
     {
       "source": "/api/(.*)",
